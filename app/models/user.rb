@@ -4,5 +4,7 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
 
-  validates :nickname, :first_name, :last_name, :first_kana, :last_kana, :birthday, presence: true
+  validates :password, format: { with: /\A(?=.*?[a-z])(?=.*?\d)[a-z\d]+\z/i, message: 'is invalid' }
+  validates :nickname, :first_name, :last_name,
+             :first_kana, :last_kana, :birthday, presence: true
 end
