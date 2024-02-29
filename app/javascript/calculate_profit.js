@@ -20,7 +20,7 @@ function calculate() {
       const formattedFee = new Intl.NumberFormat().format(fee);
       fee_item.textContent = formattedFee;
 
-      const profit = price - fee;
+      const profit = Math.floor(price) - fee;
       const formattedProfit = new Intl.NumberFormat().format(profit);
       const profit_item = document.getElementById("profit");
       profit_item.textContent = formattedProfit;
