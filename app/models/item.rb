@@ -6,6 +6,7 @@ class Item < ApplicationRecord
   belongs_to :ship_period
   belongs_to :ship_resp
   belongs_to :user
+  has_one :purchase
   has_one_attached :image
 
   validates :category_id, :name, :detail,
