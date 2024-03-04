@@ -1,24 +1,24 @@
 class PurchasesController < ApplicationController
+  before_action :set_item, only: [:index, :create]
+
   def index
+    redirect_to root_path and return if @item.purchase || (!current_user || @item.user_id == current_user.id)
+
     gon.public_key = ENV['PAYJP_PUBLIC_KEY']
-    @item = Item.find(params[:item_id])
-    @purchase = Purchase.new
+    @purchase_delivery = PurchaseDelivery.new
   end
 
   def create
-    @purchase = Purchase.new(purchase_params.except(:post_code, :ship_from_id, :city, :address, :building, :phone))
-    @delivery = @purchase.build_delivery(delivery_params)
-    if @purchase.valid? && @delivery.valid?
-      pay_item
-      @purchase.save
-      @delivery.save
-      redirect_to root_path
+    @purchase_delivery = PurchaseDelivery.new(purchase_params)
+    if @purchase_delivery.valid?
+      if pay_item && @purchase_delivery.save
+        redirect_to root_path and return
+      else
+        # 保存が失敗した場合はここで処理を行う
+        gon.public_key = ENV['PAYJP_PUBLIC_KEY']
+        render 'index', status: :unprocessable_entity and return
+      end
     else
-      # renderメソッドはturbo:loadが発火しない
-      # gonを使用すると代わりにturbo:renderが発火するので
-      # javascript側で以下の２行が必要
-      # window.addEventListener("turbo:load", pay);
-      # window.addEventListener("turbo:render", pay);
       gon.public_key = ENV['PAYJP_PUBLIC_KEY']
       render 'index', status: :unprocessable_entity
     end
@@ -26,21 +26,45 @@ class PurchasesController < ApplicationController
 
   private
 
-  def purchase_params
-    params.require(:purchase).permit(:token, :item_id, :user_id, delivery_attributes: [:post_code, :ship_from_id, :city, :address, :building, :phone])
+  def set_item
+    @item = Item.find(params[:item_id])
   end
 
-  def delivery_params
-    params.require(:purchase).permit(:post_code, :ship_from_id, :city, :address, :building, :phone)
+  # def purchase_params
+  #   params.require(:purchase_delivery).permit(:token, :post_code, :ship_from_id, :city, :address, :building, :phone).merge(
+  #     user_id: current_user.id, item_id: @item.id)
+  # end
+  def purchase_params
+    params.require(:purchase_delivery).permit(:post_code, :ship_from_id, :city, :address, :building, :phone).merge(
+      user_id: current_user.id, item_id: @item.id, token: params[:token])
+  end
+  
+  def handle_payment_failure(_exception)
+    # ここで支払い処理の失敗に関する処理を行います。
+    # 例えば、エラーメッセージを設定したり、ログを記録したりします。
+    gon.public_key = ENV['PAYJP_PUBLIC_KEY']
+    render 'index', status: :unprocessable_entity
   end
 
   def pay_item
-    item = Item.find(params[:item_id])
     Payjp.api_key = ENV['PAYJP_SECRET_KEY'] # 自身のPAY.JPテスト秘密鍵を記述しましょう
-    Payjp::Charge.create(
-      amount: item.price, # 商品の値段
-      card: params[:token], # カードトークン
-      currency: 'jpy' # 通貨の種類（日本円）
-    )
+    begin
+      Payjp::Charge.create(
+        amount: @item.price,    # 商品の値段
+        card: params[:token],   # カードトークン
+        currency: 'jpy'         # 通貨の種類（日本円）
+      )
+      # ここに成功時の処理を書く
+      # 例: 注文の状態を更新する、購入履歴を記録する、ユーザーに通知を送る等
+      true
+    rescue Payjp::CardError => e
+      # カードエラーの場合の処理
+      e.json_body[:error][:message]
+      false
+    rescue Payjp::PayjpError => e
+      # その他のPAY.JP関連エラーの場合の処理
+      e.json_body[:error][:message]
+      false
+    end
   end
 end

@@ -1,12 +1,29 @@
 class PurchaseDelivery
   include ActiveModel::Model
-  attr_accessor :item_id, :user_id, :post_code, :ship_from_id, :city, :address, :building, :phone, :price
+
+  attr_accessor :token, :item_id, :user_id, :post_code, :ship_from_id, :city, :address, :building, :phone
 
   with_options presence: true do
-    validates :item_id, :user_id, :ship_from_id, :city, :address, :phone, :price
-    validates :price,
-              numericality: { only_integer: true, greater_than_or_equal_to: 300, less_than_or_equal_to: 9_999_999,
-                              message: 'is invalid' }
+    validates :token, :item_id, :user_id, :ship_from_id, :city, :address, :phone
     validates :post_code, format: { with: /\A[0-9]{3}-[0-9]{4}\z/, message: 'is invalid. Include hyphen(-)' }
+  end
+  validate :ship_from_cannot_be_default
+
+  def save
+    return false unless valid?
+
+    purchase = Purchase.create(item_id:, user_id:)
+    return unless purchase.persisted?
+
+    delivery = Delivery.create(post_code:, ship_from_id:, city:, address:, building:, phone:, purchase:)
+    return true if delivery.persisted?
+
+    false
+  end
+
+  def ship_from_cannot_be_default
+    return unless ship_from_id == '1' || ship_from_id == 1
+
+    errors.add(:ship_from_id, "can't be ---")
   end
 end

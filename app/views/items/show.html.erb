@@ -23,7 +23,7 @@
       </span>
     </div>
 
-    <% if current_user && current_user.id == @item.user.id %>
+    <% if !@item.purchase && current_user && current_user.id == @item.user.id %>
       <%= link_to "商品の編集", edit_item_path(@item.id), method: :get, class: "item-red-btn" %>
       <p class="or-text">or</p>
       <%= link_to "削除", item_path(@item),data: { turbo_method: :delete }, class:"item-destroy" %>
