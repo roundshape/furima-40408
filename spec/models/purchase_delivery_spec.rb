@@ -19,6 +19,18 @@ RSpec.describe PurchaseDelivery, type: :model do
   end
 
   context '内容に問題がある場合' do
+    it 'user_idが空では登録できないこと' do
+      @purchase_delivery.user_id = nil
+      @purchase_delivery.valid?
+      expect(@purchase_delivery.errors.full_messages).to include("User can't be blank")
+    end
+
+    it 'item_idが空では登録できないこと' do
+      @purchase_delivery.item_id = nil
+      @purchase_delivery.valid?
+      expect(@purchase_delivery.errors.full_messages).to include("Item can't be blank")
+    end
+
     it 'tokenが空では登録できないこと' do
       @purchase_delivery.token = nil
       @purchase_delivery.valid?
@@ -75,6 +87,12 @@ RSpec.describe PurchaseDelivery, type: :model do
 
     it 'phoneが12桁では保存ができないこと' do
       @purchase_delivery.phone = '123456789012'
+      @purchase_delivery.valid?
+      expect(@purchase_delivery.errors.full_messages).to include("Phone is invalid")
+    end
+
+    it 'phoneに半角数値以外では保存ができないこと' do
+      @purchase_delivery.phone = '123456789０1'
       @purchase_delivery.valid?
       expect(@purchase_delivery.errors.full_messages).to include("Phone is invalid")
     end
