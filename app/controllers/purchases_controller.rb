@@ -1,8 +1,9 @@
 class PurchasesController < ApplicationController
+  before_action :authenticate_user!, only: [:index, :create]
   before_action :set_item, only: [:index, :create]
 
   def index
-    redirect_to root_path and return if @item.purchase || (!current_user || @item.user_id == current_user.id)
+    redirect_to root_path and return if @item.purchase || @item.user_id == current_user.id
 
     gon.public_key = ENV['PAYJP_PUBLIC_KEY']
     @purchase_delivery = PurchaseDelivery.new

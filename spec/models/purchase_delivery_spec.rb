@@ -31,6 +31,18 @@ RSpec.describe PurchaseDelivery, type: :model do
       expect(@purchase_delivery.errors.full_messages).to include("Post code can't be blank")
     end
 
+    it 'post_codeが4桁-3桁では保存ができないこと' do
+      @purchase_delivery.post_code = '1234-123'
+      @purchase_delivery.valid?
+      expect(@purchase_delivery.errors.full_messages).to include("Post code is invalid. Include hyphen(-)")
+    end
+
+    it 'post_codeに-なしでは保存ができないこと' do
+      @purchase_delivery.post_code = '1231234'
+      @purchase_delivery.valid?
+      expect(@purchase_delivery.errors.full_messages).to include("Post code is invalid. Include hyphen(-)")
+    end
+
     it 'ship_from_idが1では保存ができないこと' do
       @purchase_delivery.ship_from_id = 1
       @purchase_delivery.valid?
@@ -53,6 +65,18 @@ RSpec.describe PurchaseDelivery, type: :model do
       @purchase_delivery.phone = ''
       @purchase_delivery.valid?
       expect(@purchase_delivery.errors.full_messages).to include("Phone can't be blank")
+    end
+
+    it 'phoneが9桁では保存ができないこと' do
+      @purchase_delivery.phone = '123456789'
+      @purchase_delivery.valid?
+      expect(@purchase_delivery.errors.full_messages).to include("Phone is invalid")
+    end
+
+    it 'phoneが12桁では保存ができないこと' do
+      @purchase_delivery.phone = '123456789012'
+      @purchase_delivery.valid?
+      expect(@purchase_delivery.errors.full_messages).to include("Phone is invalid")
     end
   end
 end
